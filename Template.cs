@@ -7,11 +7,9 @@ namespace advent_of_code_2020
 
     public class DayQQ
     {
-        private const string ProblemInput = @"";
-        private const string ProblemTestInput = @"";
-
         public static int SolveProblem1()
         {
+            var lines = ProblemInput.SplitToLines();
             return 0;
         }
 
@@ -19,5 +17,8 @@ namespace advent_of_code_2020
         {
             return 0;
         }
+
+        private const string ProblemInput = @"";
+        private const string ProblemTestInput = @"";
     }
 }
