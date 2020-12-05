@@ -22,18 +22,10 @@ namespace advent_of_code_2020
                 .SplitToLines()
                 .Select(GetRowAndColumn)
                 .Select(GetSeatId)
-                .OrderBy(id => id)
-                .ToList();
+                .OrderBy(id => id);
 
-            for (int i = 1; i < passes.Count - 1; i++)
-            {
-                if (passes[i] == passes[i-1] + 2)
-                {
-                    return passes[i] - 1;
-                }
-            }
-
-            return 0;
+            var allSeats = Enumerable.Range(passes.First(), passes.Last() - passes.First() + 1);
+            return allSeats.Except(passes).Single();
         }
 
         private static int GetSeatId(Tuple<int, int> seat)
