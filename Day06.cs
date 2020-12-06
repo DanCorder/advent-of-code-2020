@@ -17,24 +17,15 @@ namespace advent_of_code_2020
 
         public static int SolveProblem2()
         {
-            var groups = ProblemInput.Split("\n\n");
-            return groups
-                .Select(CountAll)
+            return ProblemInput
+                .Split("\n\n")
+                .Select(g => g
+                    .SplitToLines()
+                    .Aggregate(
+                        (IEnumerable<char>)null,
+                        (allAnswers, answers) => allAnswers == null ? answers : answers.Intersect(allAnswers))
+                    .Count())
                 .Sum();
-        }
-
-        private static int CountAll(string group)
-        {
-            var rows = group.Split('\n');
-            var count = 0;
-            foreach (var question in rows[0])
-            {
-                if (rows.All(r => r.Contains(question)))
-                {
-                    count++;
-                }
-            }
-            return count;
         }
 
         private const string ProblemInput = @"nvlyak
