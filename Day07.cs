@@ -9,92 +9,61 @@ namespace advent_of_code_2020
     {
         public static int SolveProblem1()
         {
-            var allRules = new List<Rule>();
-            var lines = ProblemInput.SplitToLines()
-                .Select(l => ruleRegex.Match(l))
-                .ToList();
+            var allRules = GetRules();
+            var newRules = allRules.Where(r => r.Bag == "shiny gold");
+            IEnumerable<Rule> outerBags = new List<Rule>();
 
-            foreach (var ruleMatch in lines)
+            do
             {
-                var bag = ruleMatch.Groups[1].Captures[0].Value;
-                var contents = ruleMatch.Groups[2].Captures.Select(c => c.Value.Replace(",", "").Trim());
+                newRules = newRules.SelectMany(cr => allRules.Where(r => r.Contents.ContainsKey(cr.Bag)));
+                outerBags = outerBags.Concat(newRules);
+            } while (newRules.Count() > 0);
 
-                allRules.Add(new Rule { Bag = bag, Contents = contents.ToList() });
-            }
-
-            var validColours = allRules.Where(r => r.Contents.Any(c => c.Contains("shiny gold"))).ToList();
-
-            var currentOuterBags = validColours;
-            var newOuterBags = allRules.Where(r => r.Contents.Any(c => currentOuterBags.Any(v => c.Contains(v.Bag)))).ToList();
-            while (newOuterBags.Count > 0)
-            {
-                validColours = validColours.Concat(newOuterBags).ToList();
-                currentOuterBags = newOuterBags;
-                newOuterBags = allRules.Where(r => r.Contents.Any(c => currentOuterBags.Any(v => c.Contains(v.Bag)))).ToList();
-            }
-
-
-            //var matches = ruleRegex.Match(lines.First());
-            return validColours.Select(v => v.Bag).Distinct().Count();
+            return outerBags.Select(ob => ob.Bag).Distinct().Count();
         }
 
         public static int SolveProblem2()
         {
-            var allRules = new List<Rule2>();
-            var lines = ProblemTestInput.SplitToLines()
-                .Select(l => ruleRegex.Match(l))
-                .ToList();
+            var allRules = GetRules();
 
-            foreach (var ruleMatch in lines)
-            {
-                var bag = ruleMatch.Groups[1].Captures[0].Value;
-                var contents = ruleMatch.Groups[2].Captures.Select(c => c.Value.Replace(",", "").Trim());
+            var currentRule = allRules.Single(b => b.Bag.Contains("shiny gold"));
 
-                var contentRules = contents.Select(c => {
-                    if (c.Contains("no other bags"))
-                    {
-                        return null;
-                    }
-                    var match = noOfBagsRegex.Match(c);
-                    return new Tuple<string, int>(
-                        match.Groups[2].Captures[0].Value,
-                        Int32.Parse(match.Groups[1].Captures[0].Value));
-                })
-                .Where(x => x != null)
-                .ToDictionary(t => t.Item1, t => t.Item2);
-
-                allRules.Add(new Rule2 { Bag = bag, Contents = contentRules });
-            }
-
-            var currentRules = allRules.Single(b => b.Bag.Contains("shiny gold"));
-
-            return CountWithChildren(currentRules, allRules) - 1;
+            return CountWithChildren(currentRule, allRules) - 1;
         }
 
-        private static int CountWithChildren(Rule2 currentRules, List<Rule2> allRules)
+        private static List<Rule> GetRules()
         {
-            var count = 1;
-            foreach (var child in currentRules.Contents)
-            {
-                count += child.Value * CountWithChildren(allRules.Single(r => r.Bag.Contains(child.Key)), allRules);
-            }
-            return count;
+            return ProblemInput
+                .SplitToLines()
+                .Select(l => ruleRegex.Match(l))
+                .Select(m =>
+                    new Rule
+                    {
+                        Bag = m.Groups[1].Value,
+                        Contents = m.Groups[3]
+                            .Captures.Select((c, i) => new Tuple<string, int>(
+                                m.Groups[4].Captures[i].Value,
+                                Int32.Parse(c.Value)
+                        ))
+                        .ToDictionary(t => t.Item1, t => t.Item2)
+                    }
+                )
+                .ToList();
+        }
+
+        private static int CountWithChildren(Rule currentRule, List<Rule> allRules)
+        {
+            return 1 + currentRule.Contents.Sum(c =>
+                c.Value * CountWithChildren(allRules.Single(r => r.Bag.Contains(c.Key)), allRules));
         }
 
         private class Rule
         {
-            public string Bag {get; set;}
-            public List<string> Contents {get;set;}
+            public string Bag { get; set; }
+            public Dictionary<string, int> Contents { get; set; }
         }
 
-        private class Rule2
-        {
-            public string Bag {get; set;}
-            public Dictionary<string, int> Contents {get;set;}
-        }
-
-        private static Regex ruleRegex = new Regex(@"(\w+ \w+) bags contain( no other bags| \d+ \w+ \w+ bags?\,?)+\.");
-        private static Regex noOfBagsRegex = new Regex(@"(\d+) (\w+ \w+) bags?");
+        private static Regex ruleRegex = new Regex(@"(\w+ \w+) bags contain ((?:no other bags)|(?:(\d+) (\w+ \w+) bags?(?:\, )?)+)\.");
 
         private const string ProblemInput = @"wavy bronze bags contain 5 striped gold bags, 5 light tomato bags.
 drab indigo bags contain 4 pale bronze bags, 2 mirrored lavender bags.
