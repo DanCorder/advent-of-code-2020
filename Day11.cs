@@ -4,164 +4,73 @@ namespace advent_of_code_2020
     using System.Linq;
     using System.Collections.Generic;
     using System.Text.RegularExpressions;
+    using System.Diagnostics;
 
     public class Day11
     {
         public static int SolveProblem1()
         {
-            var lines = ProblemInput.SplitToLines().ToArray();
-            var borderRow = new char[lines.First().Length + 2];
-            borderRow = borderRow.Select(c => '.').ToArray();
-            var grid = new char[lines.First().Length + 2, lines.Length + 2];
-            var newGrid = new char[lines.First().Length + 2, lines.Length + 2];
-
-            for (var x = 0; x < lines.First().Length; x++)
+            char[,] grid = ProblemInput.SplitToLines().ToRectangularCharArray();
+            var newGrid = new char[grid.GetLength(0), grid.GetLength(1)];
+           
+            while(!grid.ElementsMatch(newGrid))
             {
-                for (var y = 0; y < lines.Length; y++)
-                {
-                    grid[x+1,y+1] = lines[y][x];
-                }
-            }
-            for (var x = 0; x < lines.First().Length; x++)
-            {
-                grid[x,0] = '.';
-                grid[x,lines.Length+1] = '.';
-            }
-            for (var y = 0; y < lines.Length; y++)
-            {
-                grid[0,y] = '.';
-                grid[lines.First().Length+1,y] = '.';
-            }
-            
-            while(!areSame(newGrid, grid))
-            {
-                step(grid, newGrid);
+                grid.ForAllElements((x, y) => newGrid[x,y] = process(grid, x, y));
                 var tmp = grid;
                 grid = newGrid;
                 newGrid = tmp;
             }
 
-            var count = 0;
-            for (var x = 0; x < lines.First().Length; x++)
-            {
-                for (var y = 0; y < lines.Length; y++)
-                {
-                    if (grid[x+1,y+1] == '#')
-                        count++;
-                }
-            }
-            return count;
+            return grid.ElementsWhere(e => e == '#').Count();
         }
 
-        private static void step(char[,] grid, char[,] newGrid)
+        public static int SolveProblem2()
         {
-            for (var x = 1; x < grid.GetLength(0) - 1; x++)
+            char[,] grid = ProblemInput.SplitToLines().ToRectangularCharArray();
+            var newGrid = new char[grid.GetLength(0), grid.GetLength(1)];
+           
+            while(!grid.ElementsMatch(newGrid))
             {
-                for (var y = 1; y < grid.GetLength(1) - 1; y++)
-                {
-                    newGrid[x,y] = process(grid, x, y);
-                }
+                grid.ForAllElements((x, y) => newGrid[x,y] = process2(grid, x, y));
+                var tmp = grid;
+                grid = newGrid;
+                newGrid = tmp;
             }
-        }
 
-        private static void step2(char[,] grid, char[,] newGrid)
-        {
-            for (var x = 1; x < grid.GetLength(0) - 1; x++)
-            {
-                for (var y = 1; y < grid.GetLength(1) - 1; y++)
-                {
-                    newGrid[x,y] = process2(grid, x, y);
-                }
-            }
-        }
-
-        private static bool areSame(char[,] grid, char[,] newGrid)
-        {
-            for (var x = 1; x < grid.GetLength(0) - 1; x++)
-            {
-                for (var y = 1; y < grid.GetLength(1) - 1; y++)
-                {
-                    if (newGrid[x,y] != grid[x,y])
-                        return false;
-                }
-            }
-            return true;
+            return grid.ElementsWhere(e => e == '#').Count();
         }
 
         private static char process(char[,] grid, int x, int y)
         {
+            var occupied = 0;
+            grid.ProcessEightNeightbours(x, y, (xa, ya) => occupied += grid[xa, ya] == '#' ? 1 : 0);
+
             if (grid[x,y] == 'L')
             {
-                for (var i = -1; i < 2; i++)
-                {
-                    for (var j = -1; j < 2; j++)
-                    {
-                        if (i == 0 && j == 0)
-                            continue;
-                        if (grid[x+i,y+j] == '#')
-                            return grid[x,y];
-                    }
-                }
-                return '#';
+                return occupied > 0 ? grid[x,y] : '#';
             }
             else if (grid[x,y] == '#')
             {
-                var occupied = 0;
-                for (var i = -1; i < 2; i++)
-                {
-                    for (var j = -1; j < 2; j++)
-                    {
-                        if (i == 0 && j == 0)
-                            continue;
-                        if (grid[x+i,y+j] == '#')
-                            occupied++;
-
-                        if (occupied >= 4)
-                        {
-                            return 'L';
-                        }
-                    }
-                }
-                return grid[x,y];
+                return occupied >= 4 ? 'L' : grid[x,y];
             }
             return grid[x,y];
         }
 
         private static char process2(char[,] grid, int x, int y)
         {
+            var occupied = 0;
+            foreach (var direction in Utils.EightDirections)
+            {
+                occupied += firstSeat(grid, x, y, direction[0], direction[1]) == '#' ? 1 : 0;
+            }
+
             if (grid[x,y] == 'L')
             {
-                for (var i = -1; i < 2; i++)
-                {
-                    for (var j = -1; j < 2; j++)
-                    {
-                        if (i == 0 && j == 0)
-                            continue;
-                        if (firstSeat(grid, x, y, i, j) == '#')
-                            return grid[x,y];
-                    }
-                }
-                return '#';
+                return occupied > 0 ? grid[x,y] : '#';
             }
             else if (grid[x,y] == '#')
             {
-                var occupied = 0;
-                for (var i = -1; i < 2; i++)
-                {
-                    for (var j = -1; j < 2; j++)
-                    {
-                        if (i == 0 && j == 0)
-                            continue;
-                        if (firstSeat(grid, x, y, i, j) == '#')
-                            occupied++;
-
-                        if (occupied >= 5)
-                        {
-                            return 'L';
-                        }
-                    }
-                }
-                return grid[x,y];
+                return occupied >= 5 ? 'L' : grid[x,y];
             }
             return grid[x,y];
         }
@@ -171,7 +80,7 @@ namespace advent_of_code_2020
             var xPos = x + xdiff;
             var yPos = y + ydiff;
 
-            while(xPos > 0 && xPos < grid.GetLength(0) && yPos > 0 && yPos < grid.GetLength(1))
+            while(grid.ContainsPoint(xPos, yPos))
             {
                 if (grid[xPos,yPos] == '#' || grid[xPos,yPos] == 'L')
                     return grid[xPos,yPos];
@@ -180,52 +89,6 @@ namespace advent_of_code_2020
                 yPos += ydiff;
             }
             return '.';
-        }
-
-        public static int SolveProblem2()
-        {
-            var lines = ProblemInput.SplitToLines().ToArray();
-            var borderRow = new char[lines.First().Length + 2];
-            borderRow = borderRow.Select(c => '.').ToArray();
-            var grid = new char[lines.First().Length + 2, lines.Length + 2];
-            var newGrid = new char[lines.First().Length + 2, lines.Length + 2];
-
-            for (var x = 0; x < lines.First().Length; x++)
-            {
-                for (var y = 0; y < lines.Length; y++)
-                {
-                    grid[x+1,y+1] = lines[y][x];
-                }
-            }
-            for (var x = 0; x < lines.First().Length; x++)
-            {
-                grid[x,0] = '.';
-                grid[x,lines.Length+1] = '.';
-            }
-            for (var y = 0; y < lines.Length; y++)
-            {
-                grid[0,y] = '.';
-                grid[lines.First().Length+1,y] = '.';
-            }
-            
-            while(!areSame(newGrid, grid))
-            {
-                step2(grid, newGrid);
-                var tmp = grid;
-                grid = newGrid;
-                newGrid = tmp;
-            }
-
-            var count = 0;
-            for (var x = 0; x < lines.First().Length; x++)
-            {
-                for (var y = 0; y < lines.Length; y++)
-                {
-                    if (grid[x+1,y+1] == '#')
-                        count++;
-                }
-            }
-            return count;
         }
 
         private const string ProblemInput = @"LLLLL.LLLLLLLLL.LLLLLLLLLL.LLLLLLL.LLLLLLLLLLLLLLLLL.LLLLLLLLL.LLLLLL.LLLLLLL.LLLLLLLLLLLLLLLLLLLL
