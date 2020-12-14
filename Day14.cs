@@ -11,7 +11,7 @@ namespace advent_of_code_2020
         {
             var lines = ProblemInput.SplitToLines().ToList();
             var memory = new Dictionary<int, long>();
-            List<Tuple<int, int>> mask = new List<Tuple<int, int>>();
+            List<Tuple<int, bool>> mask = new List<Tuple<int, bool>>();
 
             foreach (var line in lines)
             {
@@ -53,28 +53,21 @@ namespace advent_of_code_2020
             return memory.Sum(kvp => kvp.Value);
         }
 
-        private static List<Tuple<int, int>> GetMask(string maskString)
+        private static List<Tuple<int, bool>> GetMask(string maskString)
         {
             var rev = maskString.Reverse();
             return rev.Select((x,i) => new { x, i })
                 .Where(x => x.x != 'X')
-                .Select(x => new Tuple<int, int>(x.i, x.x == '1' ? 1 : 0))
+                .Select(x => new Tuple<int, bool>(x.i, x.x == '1'))
                 .ToList();
         }
 
-        private static long ApplyMask(List<Tuple<int, int>> mask, long value)
+        private static long ApplyMask(List<Tuple<int, bool>> mask, long value)
         {
             long newValue = value;
             foreach (var bit in mask)
             {
-                if (bit.Item2 == 1)
-                {
-                    newValue |= 1L << bit.Item1;
-                }
-                else
-                {
-                    newValue &= ~(1L << bit.Item1);
-                }
+                newValue = newValue.SetBit(bit.Item1, bit.Item2);
             }
             return newValue;
         }
@@ -99,12 +92,12 @@ namespace advent_of_code_2020
                     case '0':
                         break;
                     case '1':
-                        newValues = newValues.Select(newValue => newValue | 1L << i).ToList();
+                        newValues = newValues.Select(newValue => newValue.SetBit(i, true)).ToList();
                         break;
                     case 'X':
                         newValues = 
-                            newValues.Select(newValue => newValue | 1L << i)
-                            .Concat(newValues.Select(newValue => newValue & ~(1L << i)))
+                            newValues.Select(newValue => newValue.SetBit(i, true))
+                            .Concat(newValues.Select(newValue => newValue.SetBit(i, false)))
                             .ToList();
                         break;
                 }

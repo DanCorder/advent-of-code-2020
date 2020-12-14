@@ -129,5 +129,29 @@ namespace advent_of_code_2020
                 process(x + direction[0], y + direction[1]);
             }
         }
+
+        public static long SetBit(this long current, int position, bool value)
+        {
+            return value ?
+                current | (1L << position) :
+                current & ~(1L << position);
+        }
+
+        public static int SetBit(this int current, int position, bool value)
+        {
+            return value ?
+                current | (1 << position) :
+                current & ~(1 << position);
+        }
+
+        public static bool ReadBit(this long current, int position)
+        {
+            return (current & (1L << position)) != 0;
+        }
+
+        public static bool ReadBit(this int current, int position)
+        {
+            return (current & (1 << position)) != 0;
+        }
     }
 }
