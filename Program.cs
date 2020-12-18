@@ -40,9 +40,9 @@ namespace advent_of_code_2020
             // Console.WriteLine(Day16.SolveProblem1());
             // Console.WriteLine(Day16.SolveProblem2());
             // Console.WriteLine(Day17.SolveProblem1());
-            Console.WriteLine(Day17.SolveProblem2());
+            // Console.WriteLine(Day17.SolveProblem2());
             // Console.WriteLine(Day18.SolveProblem1());
-            // Console.WriteLine(Day18.SolveProblem2());
+            Console.WriteLine(Day18.SolveProblem2());
             // Console.WriteLine(Day19.SolveProblem1());
             // Console.WriteLine(Day19.SolveProblem2());
             // Console.WriteLine(Day20.SolveProblem1());
