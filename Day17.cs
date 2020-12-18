@@ -145,12 +145,7 @@ namespace advent_of_code_2020
 
             for (int i = 0; i < cycles; i++)
             {
-                Console.WriteLine(liveCells.Count);
                 liveCells = step2(liveCells);
-                foreach(var x in liveCells)
-                {
-                    Console.WriteLine($"x:{x.Item1} y:{x.Item2} z:{x.Item3} w:{x.Item4}");
-                }
             }
             return liveCells.Count;
         }
@@ -171,11 +166,6 @@ namespace advent_of_code_2020
                             currentLive.Item2 + direction[1],
                             currentLive.Item3 + direction[2],
                             currentLive.Item4 + w1);
-
-                        if (candidate.Item1 == 2 && candidate.Item2 == 1 && candidate.Item3 == 0 && candidate.Item4 == 0)
-                        {
-                            var q = "qq";
-                        }
 
                         if (!proccessedPoints.Contains(candidate))
                         {
@@ -212,7 +202,7 @@ namespace advent_of_code_2020
                 }
             }
 
-            return newLive; //3132 too high, 2907 too high
+            return newLive;
         }
 
         private const string ProblemInput = @"......##
