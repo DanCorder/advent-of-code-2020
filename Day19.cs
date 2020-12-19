@@ -68,12 +68,10 @@ namespace advent_of_code_2020
 
             if (rule == "42 31 | 42 11 31")
             {
-                // Hope that the data doesn't contain more than 10 levels of nesting
+                // Use balancing groups for a more general and neater solution
                 var rule42 = buildRule2(rules[42], rules);
                 var rule31 = buildRule2(rules[31], rules);
-                var options = Enumerable.Range(1, 10)
-                    .Select(i => $"(?:(?:{rule42}){{{i}}}(?:{rule31}){{{i}}})");
-                return $"(?:{string.Join('|', options)})";
+                return $"(?:(?<count>{rule42})+(?<-count>{rule31})+(?(count)(?!)))";
             }
 
             var parts = rule.Split('|');
