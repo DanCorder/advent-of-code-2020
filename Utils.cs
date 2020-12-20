@@ -86,6 +86,54 @@ namespace advent_of_code_2020
                 grid.Cast<T>().SequenceEqual(otherGrid.Cast<T>());
         }
 
+        public static T[] GetRow<T>(this T[,] grid, int rowNumber)
+        {
+            return Enumerable.Range(0, grid.GetLength(0))
+                    .Select(x => grid[x, rowNumber])
+                    .ToArray();
+        }
+
+        public static T[] GetColumn<T>(this T[,] grid, int columnNumber)
+        {
+            return Enumerable.Range(0, grid.GetLength(1))
+                    .Select(x => grid[columnNumber, x])
+                    .ToArray();
+        }
+
+        public static T[,] RotateClockwise<T>(this T[,] grid)
+        {
+            var width = grid.GetLength(0);
+            var height = grid.GetLength(1);
+            var ret = new T[height, width];
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    ret[x,y] = grid[y,height-x-1];
+                }
+            }
+
+            return ret;
+        }
+
+        public static T[,] FlipHorizontally<T>(this T[,] grid)
+        {
+            var width = grid.GetLength(0);
+            var height = grid.GetLength(1);
+            var ret = new T[width, height];
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    ret[x,y] = grid[width-x-1,y];
+                }
+            }
+
+            return ret;
+        }
+
         public static void DebugPrint(this char[,] grid)
         {
             var sb = new StringBuilder();
@@ -99,7 +147,9 @@ namespace advent_of_code_2020
                 sb.Append(Environment.NewLine);
             }
 
-            Debug.WriteLine(sb.ToString());
+            var gridString = sb.ToString();
+
+            Debug.WriteLine(gridString);
         }
 
         public static int[][] EightDirections = new int[][] {

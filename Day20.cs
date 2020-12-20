@@ -38,9 +38,342 @@ namespace advent_of_code_2020
             }
         }
 
+        private class Tile2
+        {
+            public long id;
+            public char[,] grid;
+            public List<string> clockwiseEdges;
+            public List<string> anticlockwiseEdges;
+            public Tile2(string tile)
+            {
+                var lines = tile.SplitToLines().ToList();
+                grid = lines.Skip(1).ToRectangularCharArray();
+                id = long.Parse(lines.First().Substring(5, 4));
+                clockwiseEdges = new List<string>();
+                clockwiseEdges.Add(new string(grid.GetRow(0)));
+                clockwiseEdges.Add(new string(grid.GetColumn(9)));
+                clockwiseEdges.Add(new string(grid.GetRow(9).Reverse().ToArray()));
+                clockwiseEdges.Add(new string(grid.GetColumn(0).Reverse().ToArray()));
+                anticlockwiseEdges = clockwiseEdges.Select(e => new string(e.Reverse().ToArray())).ToList();
+            }
+        }
+
         public static int SolveProblem2()
         {
-            return 0;
+            var tiles = ProblemInput.Split("\n\n").Select(t => new Tile2(t)).ToList();
+            var tileSquareSideLength = (int)Math.Sqrt(tiles.Count);
+
+            var possibleCorners = tiles.Where(t => {
+                var others = tiles.Except(new Tile2[] { t });
+                var matches = t.clockwiseEdges.Where(te => others.Any(o => o.clockwiseEdges.Contains(te) || o.anticlockwiseEdges.Contains(te)));
+                return matches.Count() == 2;
+            });
+
+            var corner = possibleCorners.First();
+            var others = tiles.Except(new Tile2[] { corner });
+            var matchingEdges = corner.clockwiseEdges.Select(e => others.Any(t => t.clockwiseEdges.Contains(e) || t.anticlockwiseEdges.Contains(e))).ToList();
+            var clockwiseRotations = 0;
+            if (matchingEdges[0] && matchingEdges[1])
+                clockwiseRotations = 1;
+            if (matchingEdges[1] && matchingEdges[2])
+                clockwiseRotations = 0;
+            if (matchingEdges[2] && matchingEdges[3])
+                clockwiseRotations = 3;
+            if (matchingEdges[3] && matchingEdges[0])
+                clockwiseRotations = 2;
+
+            var tileArrangement = new Arrangement[tileSquareSideLength,tileSquareSideLength];
+
+            tileArrangement[0,0] = new Arrangement(corner, false, clockwiseRotations);
+            for (var x = 1; x < tileSquareSideLength; x++)
+            {
+                tileArrangement[x, 0] = FindRight(tileArrangement[x-1, 0], tiles);
+            }
+
+            for (var y = 1; y < tileSquareSideLength; y++)
+            {
+                for (var x = 0; x < tileSquareSideLength; x++)
+                {
+                    tileArrangement[x, y] = FindBelow(tileArrangement[x, y-1], tiles);
+                }
+            }
+            
+            // var pictureWithBorders = new char[tileSquareSideLength * 10, tileSquareSideLength * 10];
+            // for (var y = 0; y < tileSquareSideLength; y++)
+            // {
+            //     for (var x = 0; x < tileSquareSideLength; x++)
+            //     {
+            //         var transformedTile = Transform(tileArrangement[x,y]);
+            //         for (var y2 = 0; y2 < transformedTile.GetLength(1); y2++)
+            //         {
+            //             for (var x2 = 0; x2 < transformedTile.GetLength(0); x2++)
+            //             {
+            //                 pictureWithBorders[x*10 + x2, y*10 + y2] = transformedTile[x2,y2];
+            //             }
+            //         }
+            //     }
+            // }
+            // pictureWithBorders.DebugPrint();
+
+            var pictureWithoutBorders = new char[tileSquareSideLength * 8, tileSquareSideLength * 8];
+            for (var y = 0; y < tileSquareSideLength; y++)
+            {
+                for (var x = 0; x < tileSquareSideLength; x++)
+                {
+                    var transformedTile = Transform(tileArrangement[x,y]);
+                    for (var y2 = 0; y2 < transformedTile.GetLength(1) - 2; y2++)
+                    {
+                        for (var x2 = 0; x2 < transformedTile.GetLength(0) - 2; x2++)
+                        {
+                            pictureWithoutBorders[x*8 + x2, y*8 + y2] = transformedTile[x2+1,y2+1];
+                        }
+                    }
+                }
+            }
+            pictureWithoutBorders.DebugPrint();
+
+            var amountOfSea = pictureWithoutBorders.ElementsWhere(e => e == '#').Count();
+            var monsters = countMonsters(pictureWithoutBorders);
+
+            return amountOfSea - (monsters*15);
+        }
+
+        private static int countMonsters(char[,] picture)
+        {
+            for (int i = 0; i<3; i++)
+            {
+                var monsterCount = countMonstersInternal(picture);
+                if (monsterCount > 0)
+                    return monsterCount;
+                picture = picture.RotateClockwise();
+            }
+
+            picture = picture.FlipHorizontally();
+
+            for (int i = 0; i<3; i++)
+            {
+                var monsterCount = countMonstersInternal(picture);
+                if (monsterCount > 0)
+                    return monsterCount;
+                picture = picture.RotateClockwise();
+            }
+            return -1;
+        }
+
+        private static int countMonstersInternal(char[,] picture)
+        {
+            //   01234567890123456789
+            // 0                   # 
+            // 1 #    ##    ##    ###
+            // 2  #  #  #  #  #  #   
+            var monsterOffsets = new List<Tuple<int, int>>();
+            monsterOffsets.Add(new Tuple<int, int>(0, 1));
+            monsterOffsets.Add(new Tuple<int, int>(1, 2));
+            monsterOffsets.Add(new Tuple<int, int>(4, 2));
+            monsterOffsets.Add(new Tuple<int, int>(5, 1));
+            monsterOffsets.Add(new Tuple<int, int>(6, 1));
+            monsterOffsets.Add(new Tuple<int, int>(7, 2));
+            monsterOffsets.Add(new Tuple<int, int>(10, 2));
+            monsterOffsets.Add(new Tuple<int, int>(11, 1));
+            monsterOffsets.Add(new Tuple<int, int>(12, 1));
+            monsterOffsets.Add(new Tuple<int, int>(13, 2));
+            monsterOffsets.Add(new Tuple<int, int>(16, 2));
+            monsterOffsets.Add(new Tuple<int, int>(17, 1));
+            monsterOffsets.Add(new Tuple<int, int>(18, 1));
+            monsterOffsets.Add(new Tuple<int, int>(18, 0));
+            monsterOffsets.Add(new Tuple<int, int>(19, 1));
+            var monsterWidth = 20;
+            var monsterHeight = 3;
+
+            var count = 0;
+            for (var y = 0; y < picture.GetLength(1) - monsterHeight; y++)
+            {
+                for (var x = 0; x < picture.GetLength(0) - monsterWidth; x++)
+                {
+                    if (monsterOffsets.All(mo => picture[x+mo.Item1, y+mo.Item2] == '#'))
+                        count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static char[,] Transform(Arrangement arrangement)
+        {
+            char[,] ret = arrangement.Tile.grid;
+            if (arrangement.Flipped)
+            {
+                ret = ret.FlipHorizontally();
+            }
+            for (int i=0; i<arrangement.ClockwiseRotations; i++)
+            {
+                ret = ret.RotateClockwise();
+            }
+            return ret;
+        }
+        
+        private static Arrangement FindRight(Arrangement left, List<Tile2> tiles)
+        {
+            string topDownEdgeToMatch = "";
+            var others = tiles.Except(new Tile2[] { left.Tile });
+            if (left.Flipped)
+            {
+                switch(left.ClockwiseRotations)
+                {
+                    case 0:
+                        topDownEdgeToMatch = left.Tile.anticlockwiseEdges[3];
+                        break;
+                    case 1:
+                        topDownEdgeToMatch = left.Tile.anticlockwiseEdges[0];
+                        break;
+                    case 2:
+                        topDownEdgeToMatch = left.Tile.anticlockwiseEdges[1];
+                        break;
+                    case 3:
+                        topDownEdgeToMatch = left.Tile.anticlockwiseEdges[2];
+                        break;
+                }
+            }
+            else
+            {
+                switch(left.ClockwiseRotations)
+                {
+                    case 0:
+                        topDownEdgeToMatch = left.Tile.clockwiseEdges[1];
+                        break;
+                    case 1:
+                        topDownEdgeToMatch = left.Tile.clockwiseEdges[0];
+                        break;
+                    case 2:
+                        topDownEdgeToMatch = left.Tile.clockwiseEdges[3];
+                        break;
+                    case 3:
+                        topDownEdgeToMatch = left.Tile.clockwiseEdges[2];
+                        break;
+                }
+            }
+
+            var nextTile = others.Single(t => t.anticlockwiseEdges.Contains(topDownEdgeToMatch) || t.clockwiseEdges.Contains(topDownEdgeToMatch));
+            if (nextTile.clockwiseEdges.Contains(topDownEdgeToMatch))
+            {
+                var edgeIndex = nextTile.clockwiseEdges.IndexOf(topDownEdgeToMatch);
+                switch (edgeIndex)
+                {
+                    case 0:
+                        return new Arrangement(nextTile, true, 3);
+                    case 1:
+                        return new Arrangement(nextTile, true, 0);
+                    case 2:
+                        return new Arrangement(nextTile, true, 1);
+                    case 3:
+                        return new Arrangement(nextTile, true, 2);
+                }
+            }
+            else
+            {
+                var edgeIndex = nextTile.anticlockwiseEdges.IndexOf(topDownEdgeToMatch);
+                switch (edgeIndex)
+                {
+                    case 0:
+                        return new Arrangement(nextTile, false, 3);
+                    case 1:
+                        return new Arrangement(nextTile, false, 2);
+                    case 2:
+                        return new Arrangement(nextTile, false, 1);
+                    case 3:
+                        return new Arrangement(nextTile, false, 0);
+                }
+            }
+            throw new Exception();
+        }
+
+        private static Arrangement FindBelow(Arrangement above, List<Tile2> tiles)
+        {
+            string leftToRightEdgeToMatch = "";
+            var others = tiles.Except(new Tile2[] { above.Tile });
+            if (above.Flipped)
+            {
+                switch(above.ClockwiseRotations)
+                {
+                    case 0:
+                        leftToRightEdgeToMatch = above.Tile.clockwiseEdges[2];
+                        break;
+                    case 1:
+                        leftToRightEdgeToMatch = above.Tile.clockwiseEdges[3];
+                        break;
+                    case 2:
+                        leftToRightEdgeToMatch = above.Tile.clockwiseEdges[0];
+                        break;
+                    case 3:
+                        leftToRightEdgeToMatch = above.Tile.clockwiseEdges[1];
+                        break;
+                }
+            }
+            else
+            {
+                switch(above.ClockwiseRotations)
+                {
+                    case 0:
+                        leftToRightEdgeToMatch = above.Tile.anticlockwiseEdges[2];
+                        break;
+                    case 1:
+                        leftToRightEdgeToMatch = above.Tile.anticlockwiseEdges[1];
+                        break;
+                    case 2:
+                        leftToRightEdgeToMatch = above.Tile.anticlockwiseEdges[0];
+                        break;
+                    case 3:
+                        leftToRightEdgeToMatch = above.Tile.anticlockwiseEdges[3];
+                        break;
+                }
+            }
+
+            var nextTile = others.Single(t => t.anticlockwiseEdges.Contains(leftToRightEdgeToMatch) || t.clockwiseEdges.Contains(leftToRightEdgeToMatch));
+            if (nextTile.clockwiseEdges.Contains(leftToRightEdgeToMatch))
+            {
+                var edgeIndex = nextTile.clockwiseEdges.IndexOf(leftToRightEdgeToMatch);
+                switch (edgeIndex)
+                {
+                    case 0:
+                        return new Arrangement(nextTile, false, 0);
+                    case 1:
+                        return new Arrangement(nextTile, false, 3);
+                    case 2:
+                        return new Arrangement(nextTile, false, 2);
+                    case 3:
+                        return new Arrangement(nextTile, false, 1);
+                }
+            }
+            else
+            {
+                var edgeIndex = nextTile.anticlockwiseEdges.IndexOf(leftToRightEdgeToMatch);
+                switch (edgeIndex)
+                {
+                    case 0:
+                        return new Arrangement(nextTile, true, 0);
+                    case 1:
+                        return new Arrangement(nextTile, true, 1);
+                    case 2:
+                        return new Arrangement(nextTile, true, 2);
+                    case 3:
+                        return new Arrangement(nextTile, true, 3);
+                }
+            }
+            throw new Exception();
+        }
+
+        private struct Arrangement
+        {
+            public Tile2 Tile;
+            public bool Flipped;
+            public int ClockwiseRotations;
+
+            public Arrangement(Tile2 tile, bool flipped, int clockwiseRotations)
+            {
+                Tile = tile;
+                Flipped = flipped;
+                ClockwiseRotations = clockwiseRotations;
+            }
         }
 
         private const string ProblemInput = @"Tile 2131:
