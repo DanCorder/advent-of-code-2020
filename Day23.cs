@@ -60,44 +60,34 @@ namespace advent_of_code_2020
         {
             var max = 1000000;
             // var max = 9;
-            var initialCups = ProblemInput.Select(c => Int32.Parse(c.ToString())).Concat(Enumerable.Range(10, 999991)).ToArray();
+            var initialCups = ProblemInput.Select(c => Int32.Parse(c.ToString())).Concat(Enumerable.Range(10, 999991)).ToList();
             // var initialCups = "389125467".Select(c => Int32.Parse(c.ToString())).Concat(Enumerable.Range(10, 999991)).ToArray();
             // var initialCups = ProblemTestInput.Select(c => Int32.Parse(c.ToString())).ToArray();
             var turns = 10000000;
             // var turns = 100;
-            var cups = new LinkedList<int>(initialCups);
+            var currentCup = initialCups.First();
 
-            var currentPos = cups.First;
-            var pickedUp = new LinkedListNode<int>[3];
-
-            long removingTicks = 0;
-            long findingTicks = 0;
-            long addingTicks = 0;
-            Stopwatch sw = null;
+            var cups = new Dictionary<int, int>();
+            for (var i = 0; i < max - 1; i++)
+            {
+                cups[initialCups[i]] = initialCups[i+1];
+            }
+            cups[initialCups[max-1]] = initialCups[0];
 
             for (var move = 0; move < turns; move++)
             {
-                if (move % 1000 == 0)
-                    Console.WriteLine(move);
+                var firstRemoved = cups[currentCup];
+                var secondRemoved = cups[firstRemoved];
+                var lastRemoved = cups[secondRemoved];
 
-                // sw = Stopwatch.StartNew();
-                for (var p = 0; p < 3; p++)
-                {
-                    var pick = currentPos.Next ?? cups.First;
-                    pickedUp[p] = pick;
-                    cups.Remove(pick);
-                }
-                // sw.Stop();
-                // removingTicks += sw.ElapsedMilliseconds;
+                cups[currentCup] = cups[lastRemoved];
 
-                var destValue = currentPos.Value - 1;
-
-                var pickedUpValues = pickedUp.Select(n => n.Value).ToHashSet();
+                var destValue = currentCup - 1;
                 while(true)
                 {
                     if (destValue < 1)
                         destValue = max;
-                    if (pickedUpValues.Contains(destValue))
+                    if (destValue == firstRemoved || destValue == secondRemoved || destValue == lastRemoved)
                     {
                         destValue--;
                     }
@@ -105,33 +95,17 @@ namespace advent_of_code_2020
                         break;
                 }
 
-                // sw = Stopwatch.StartNew();
-                var insertPoint = cups.Find(destValue);
-                // sw.Stop();
-                // findingTicks += sw.ElapsedMilliseconds;
+                var destNext = cups[destValue];
+                cups[destValue] = firstRemoved;
+                cups[lastRemoved] = destNext;
 
-                // sw = Stopwatch.StartNew();
-                for (var i = 0; i < 3; i++)
-                {
-                    cups.AddAfter(insertPoint, pickedUp[2-i]);
-                }
-                // sw.Stop();
-                // addingTicks += sw.ElapsedMilliseconds;
-
-                currentPos = currentPos.Next ?? cups.First;
+                currentCup = cups[currentCup];
             }
 
-            Console.WriteLine(removingTicks);
-            Console.WriteLine(findingTicks);
-            Console.WriteLine(addingTicks);
-            
-            var onePos = cups.Find(1);
-            var n1 = onePos.Next ?? cups.First;
-            var n2 = n1.Next ?? cups.First;
+            var n1 = cups[1];
+            var n2 = cups[n1];
 
-
-
-            return ((long)n1.Value) * ((long)n2.Value);
+            return ((long)n1) * ((long)n2);
         }
 
         private const string ProblemInput = @"476138259";
