@@ -4,6 +4,7 @@ namespace advent_of_code_2020
     using System.Linq;
     using System.Collections.Generic;
     using System.Text.RegularExpressions;
+    using System.Diagnostics;
 
     public class Day23
     {
@@ -57,7 +58,80 @@ namespace advent_of_code_2020
 
         public static long SolveProblem2()
         {
-            return 0;
+            var max = 1000000;
+            // var max = 9;
+            var initialCups = ProblemInput.Select(c => Int32.Parse(c.ToString())).Concat(Enumerable.Range(10, 999991)).ToArray();
+            // var initialCups = "389125467".Select(c => Int32.Parse(c.ToString())).Concat(Enumerable.Range(10, 999991)).ToArray();
+            // var initialCups = ProblemTestInput.Select(c => Int32.Parse(c.ToString())).ToArray();
+            var turns = 10000000;
+            // var turns = 100;
+            var cups = new LinkedList<int>(initialCups);
+
+            var currentPos = cups.First;
+            var pickedUp = new LinkedListNode<int>[3];
+
+            long removingTicks = 0;
+            long findingTicks = 0;
+            long addingTicks = 0;
+            Stopwatch sw = null;
+
+            for (var move = 0; move < turns; move++)
+            {
+                if (move % 1000 == 0)
+                    Console.WriteLine(move);
+
+                // sw = Stopwatch.StartNew();
+                for (var p = 0; p < 3; p++)
+                {
+                    var pick = currentPos.Next ?? cups.First;
+                    pickedUp[p] = pick;
+                    cups.Remove(pick);
+                }
+                // sw.Stop();
+                // removingTicks += sw.ElapsedMilliseconds;
+
+                var destValue = currentPos.Value - 1;
+
+                var pickedUpValues = pickedUp.Select(n => n.Value).ToHashSet();
+                while(true)
+                {
+                    if (destValue < 1)
+                        destValue = max;
+                    if (pickedUpValues.Contains(destValue))
+                    {
+                        destValue--;
+                    }
+                    else
+                        break;
+                }
+
+                // sw = Stopwatch.StartNew();
+                var insertPoint = cups.Find(destValue);
+                // sw.Stop();
+                // findingTicks += sw.ElapsedMilliseconds;
+
+                // sw = Stopwatch.StartNew();
+                for (var i = 0; i < 3; i++)
+                {
+                    cups.AddAfter(insertPoint, pickedUp[2-i]);
+                }
+                // sw.Stop();
+                // addingTicks += sw.ElapsedMilliseconds;
+
+                currentPos = currentPos.Next ?? cups.First;
+            }
+
+            Console.WriteLine(removingTicks);
+            Console.WriteLine(findingTicks);
+            Console.WriteLine(addingTicks);
+            
+            var onePos = cups.Find(1);
+            var n1 = onePos.Next ?? cups.First;
+            var n2 = n1.Next ?? cups.First;
+
+
+
+            return ((long)n1.Value) * ((long)n2.Value);
         }
 
         private const string ProblemInput = @"476138259";
