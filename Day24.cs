@@ -61,7 +61,57 @@ namespace advent_of_code_2020
 
         public static int SolveProblem2()
         {
-            return 0;
+            var directions = ProblemInput.SplitToLines().Select(ToDirections).ToList();
+            var blackTiles = directions.GroupBy(d => d)
+                .Where(g => (g.Count() % 2) == 1)
+                .Select(g => g.Key)
+                .ToHashSet();
+
+            for (var i = 0; i < 100; i++)
+            {
+                blackTiles = flipTiles(blackTiles);
+            }
+            return blackTiles.Count();
+        }
+
+        private static HashSet<Tuple<int, int>> flipTiles(HashSet<Tuple<int, int>> currentTiles)
+        {
+            var checkedTiles = new HashSet<Tuple<int, int>>();
+            var newTiles = new HashSet<Tuple<int, int>>();
+
+            foreach (var currentTile in currentTiles)
+            {
+                var tilesToCheck = getNeighbours(currentTile);
+                tilesToCheck.Add(currentTile);
+
+                foreach(var tileToCheck in tilesToCheck)
+                {
+                    if (checkedTiles.Contains(tileToCheck))
+                        continue;
+
+                    var neighbours = getNeighbours(tileToCheck);
+                    var blackNeighbours = currentTiles.Intersect(neighbours).Count();
+                    var isBlack = currentTiles.Contains(tileToCheck);
+                    if ((isBlack && (blackNeighbours == 1 || blackNeighbours == 2))
+                        || (!isBlack && blackNeighbours == 2))
+                        newTiles.Add(tileToCheck);
+                }
+            }
+
+            return newTiles;
+        }
+
+        private static HashSet<Tuple<int, int>> getNeighbours(Tuple<int, int> tile)
+        {
+            var n = new HashSet<Tuple<int, int>>();
+            n.Add(new Tuple<int, int>(tile.Item1, tile.Item2 - 1));
+            n.Add(new Tuple<int, int>(tile.Item1, tile.Item2 + 1));
+            n.Add(new Tuple<int, int>(tile.Item1 - 1, tile.Item2));
+            n.Add(new Tuple<int, int>(tile.Item1 + 1, tile.Item2));
+            n.Add(new Tuple<int, int>(tile.Item1 + 1, tile.Item2 - 1));
+            n.Add(new Tuple<int, int>(tile.Item1 - 1, tile.Item2 + 1));
+
+            return n;
         }
 
         private const string ProblemInput = @"enwwsenweswweseseswnenewwswseswenw
